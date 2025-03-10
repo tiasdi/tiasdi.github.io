@@ -334,3 +334,158 @@
         let gainNode = audioContext.createGain();
         gainNode.gain.value = 0;
         let convolver = audioContext.createConvolver();
+        if (reverbBuffer) {
+          convolver.buffer = reverbBuffer;
+        }
+        source.connect(gainNode);
+        gainNode.connect(convolver);
+        convolver.connect(audioContext.destination);
+        gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(1, audioContext.currentTime + 0.6);
+        sustainedHorn = { audio: hornAudio, gainNode: gainNode };
+      } catch(e) {
+        console.error("Error processing sustained horn with reverb: " + e);
+      }
+    }
+    function stopSustainedHorn() {
+      if (!sustainedHorn) return;
+      try {
+        let gainNode = sustainedHorn.gainNode;
+        gainNode.gain.setValueAtTime(gainNode.gain.value, audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.35);
+        setTimeout(() => {
+          sustainedHorn.audio.pause();
+          sustainedHorn.audio.currentTime = 0;
+          sustainedHorn = null;
+        }, 350);
+      } catch(e) {
+        console.error("Error stopping sustained horn: " + e);
+      }
+    }
+
+    // Track control functions
+    function randomizeTrack(trackNumber) {
+      let available = [];
+      for (let genre in songsByGenre) {
+        if (activeGenres[genre]) {
+          available = available.concat(songsByGenre[genre]);
+        }
+      }
+      if (available.length === 0) {
+        for (let genre in songsByGenre) {
+          available = available.concat(songsByGenre[genre]);
+        }
+      }
+      const randomSong = available[Math.floor(Math.random() * available.length)];
+      trackSongs[trackNumber] = randomSong;
+      const label = document.getElementById(`track${trackNumber}Label`);
+      label.textContent = (currentTrack === trackNumber ? ">> " : "") +
+                          `Track ${trackNumber}: ${randomSong.split('/').pop()}`;
+    }
+    function selectTrack(trackNumber) {
+      currentTrack = trackNumber;
+      for (let i = 1; i <= 2; i++) {
+        const label = document.getElementById(`track${i}Label`);
+        if (i === trackNumber) {
+          label.textContent = ">> " + label.textContent.replace(">> ", "");
+        } else {
+          label.textContent = label.textContent.replace(">> ", "");
+        }
+      }
+    }
+    function playSelectedTrack() {
+      if (currentTrack && trackSongs[currentTrack]) {
+        playSong(trackSongs[currentTrack]);
+      } else {
+        console.error("Please select a track by randomizing and then selecting it.");
+      }
+    }
+    function stopPlayback() {
+      if (currentAudio) {
+        fadeAudio(currentAudio, 0, 800, () => {
+          currentAudio.pause();
+          currentAudio.currentTime = 0;
+          currentAudio = null;
+        });
+      }
+    }
+    // Genre selection
+    function toggleGenre(element) {
+      const genre = element.getAttribute("data-genre");
+      if (activeGenres[genre]) {
+        delete activeGenres[genre];
+        element.classList.remove("active");
+      } else {
+        activeGenres[genre] = true;
+        element.classList.add("active");
+      }
+    }
+    // Populate team dropdowns (hardcoded)
+    function populateTeamSelects(teamArray) {
+      const homeSelect = document.getElementById("homeTeamSelect");
+      const awaySelect = document.getElementById("awayTeamSelect");
+      homeSelect.innerHTML = '';
+      awaySelect.innerHTML = '';
+      teamArray.forEach(team => {
+        const option1 = document.createElement('option');
+        option1.value = team;
+        option1.textContent = team;
+        homeSelect.appendChild(option1);
+        const option2 = document.createElement('option');
+        option2.value = team;
+        option2.textContent = team;
+        awaySelect.appendChild(option2);
+      });
+    }
+    // Event listeners for GOAL buttons
+    document.getElementById("homeGoalBtn").addEventListener("mousedown", () => {
+      const team = document.getElementById("homeTeamSelect").value;
+      startGoalSound(team);
+    });
+    document.getElementById("homeGoalBtn").addEventListener("mouseup", () => {
+      releaseGoalSound();
+    });
+    document.getElementById("homeGoalBtn").addEventListener("mouseleave", () => {
+      releaseGoalSound();
+    });
+    document.getElementById("awayGoalBtn").addEventListener("mousedown", () => {
+      const team = document.getElementById("awayTeamSelect").value;
+      startGoalSound(team);
+    });
+    document.getElementById("awayGoalBtn").addEventListener("mouseup", () => {
+      releaseGoalSound();
+    });
+    document.getElementById("awayGoalBtn").addEventListener("mouseleave", () => {
+      releaseGoalSound();
+    });
+    // STOP button stops everything.
+    document.getElementById("stopBtn").addEventListener("click", () => {
+      stopGoalSound();
+      stopPlayback();
+    });
+    // Event listeners for other sound buttons
+    document.getElementById("homePPBtn").addEventListener("click", () => {
+      const team = document.getElementById("homeTeamSelect").value;
+      playTeamSound(team, "Powerplay");
+    });
+    document.getElementById("homeWinBtn").addEventListener("click", () => {
+      const team = document.getElementById("homeTeamSelect").value;
+      playTeamSound(team, "Win");
+    });
+    document.getElementById("awayPPBtn").addEventListener("click", () => {
+      const team = document.getElementById("awayTeamSelect").value;
+      playTeamSound(team, "Powerplay");
+    });
+    document.getElementById("awayWinBtn").addEventListener("click", () => {
+      const team = document.getElementById("awayTeamSelect").value;
+      playTeamSound(team, "Win");
+    });
+    // Initialization
+    populateTeamSelects(teams);
+    initAudioContext();
+    randomizeTrack(1);
+    randomizeTrack(2);
+    selectTrack(1);
+  </script>
+</body>
+</html>
