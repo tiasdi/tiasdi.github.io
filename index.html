@@ -155,10 +155,10 @@
   </div>
 
   <script>
-    // Configurable team list
+    // Configurable team list (edit here to add more teams)
     const teams = ["Langley"];
 
-    // Global state
+    // Global state variables
     let currentAudio = null;
     let currentTrack = null; // 1 or 2
     let currentGoalTeam = null;
@@ -174,7 +174,7 @@
     let goalTimeout = null;
     let goalPlaying = false;
 
-    // Audio playback utilities
+    // Audio playback utilities (original system)
     function fadeAudio(audio, targetVolume, duration, callback) {
       const steps = 20;
       const stepTime = duration / steps;
@@ -219,7 +219,7 @@
       playSong(path);
     }
 
-    // Horn/Goal logic with reverb for horns
+    // Horn/Goal logic with reverb for horn sounds using Web Audio API
     let audioContext, reverbBuffer;
     function initAudioContext() {
       if (!audioContext) {
@@ -236,7 +236,7 @@
           .catch(err => console.error('Error loading impulse response: ' + err));
       }
     }
-    // playHornSound now accepts isRepeating to determine fade-out behavior
+    // playHornSound: always fades in over 0.6s; if isRepeating, it fades out over 0.35s.
     function playHornSound(team, isRepeating = true) {
       const hornPath = getTeamSoundPath(team, "Horn");
       let hornAudio = new Audio(hornPath);
@@ -257,15 +257,16 @@
         gainNode.connect(convolver);
         convolver.connect(audioContext.destination);
         gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-        gainNode.gain.linearRampToValueAtTime(1, audioContext.currentTime + 0.55);
+        gainNode.gain.linearRampToValueAtTime(1, audioContext.currentTime + 0.6);
         if (isRepeating) {
-          gainNode.gain.setValueAtTime(1, audioContext.currentTime + 0.55);
-          gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.55 + 0.35);
+          gainNode.gain.setValueAtTime(1, audioContext.currentTime + 0.6);
+          gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.6 + 0.35);
         }
       } catch(e) {
         console.error("Error processing horn with reverb: " + e);
       }
     }
+    // startGoalSound: starts repeating horn plays (with reverb fade in/out) and schedules Goal.mp3 after a delay.
     function startGoalSound(team) {
       goalPlaying = false;
       currentGoalTeam = team;
@@ -282,6 +283,7 @@
         }
       }, delay);
     }
+    // stopGoalSound: stops repeating horn sounds and plays one final horn (without fade-out).
     function stopGoalSound() {
       if (hornInterval) clearInterval(hornInterval);
       if (goalTimeout) clearTimeout(goalTimeout);
@@ -350,7 +352,7 @@
         element.classList.add("active");
       }
     }
-    // Populate team dropdowns (hardcoded)
+    // Populate team dropdowns using the hardcoded array
     function populateTeamSelects(teamArray) {
       const homeSelect = document.getElementById("homeTeamSelect");
       const awaySelect = document.getElementById("awayTeamSelect");
