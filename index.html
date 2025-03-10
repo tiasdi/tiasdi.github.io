@@ -157,11 +157,11 @@
   <script>
     // Show version alert on window load.
     window.onload = function() {
-      alert("Hockey DJ Webapp Version 1.2");
+      alert("Hockey DJ Webapp Version 1.4");
     };
 
     // Configurable team list
-    const teams = ["Langley","Version 1.2"];
+    const teams = ["Langley"];
 
     // Global state
     let currentAudio = null;
@@ -178,7 +178,7 @@
     let goalTimeout = null;
     let goalPlaying = false;
 
-    // Global sustained horn variable
+    // Sustained horn variable for looping horn sound.
     let sustainedHorn = null;
 
     // Audio playback utilities (original system)
@@ -226,7 +226,7 @@
       playSong(path);
     }
 
-    // Web Audio API variables for reverb processing
+    // Web Audio API setup for reverb processing
     let audioContext, reverbBuffer;
     function initAudioContext() {
       if (!audioContext) {
@@ -244,7 +244,7 @@
       }
     }
 
-    // Start sustained horn: create one horn audio element, set it to loop, and fade in over 0.6s.
+    // Start a sustained horn sound that loops. It fades in over 0.6s.
     function startSustainedHorn(team) {
       if (sustainedHorn !== null) return; // Already playing
       const hornPath = getTeamSoundPath(team, "Horn");
@@ -270,16 +270,13 @@
         gainNode.gain.linearRampToValueAtTime(1, audioContext.currentTime + 0.6);
         sustainedHorn = {
           audio: hornAudio,
-          gainNode: gainNode,
-          source: source,
-          convolver: convolver,
-          team: team
+          gainNode: gainNode
         };
       } catch(e) {
         console.error("Error processing sustained horn with reverb: " + e);
       }
     }
-    // Stop sustained horn: fade out over 0.35s, then stop and clear sustainedHorn.
+    // Stop the sustained horn by fading out over 0.35s and then stopping it.
     function stopSustainedHorn() {
       if (!sustainedHorn) return;
       try {
@@ -296,7 +293,9 @@
       }
     }
 
-    // startGoalSound: triggers sustained horn and schedules the goal song.
+    // startGoalSound: On button press, start the sustained horn and schedule the goal song.
+    // The goal song (Goal.mp3) will play 2-4 seconds after the horn is initially pressed,
+    // regardless of button hold.
     function startGoalSound(team) {
       goalPlaying = false;
       currentGoalTeam = team;
@@ -310,7 +309,7 @@
         }
       }, delay);
     }
-    // stopGoalSound: stops sustained horn.
+    // stopGoalSound: Called when STOP is pressed; stops the sustained horn and cancels the goal song.
     function stopGoalSound() {
       if (goalTimeout) clearTimeout(goalTimeout);
       goalTimeout = null;
@@ -392,19 +391,23 @@
         awaySelect.appendChild(option2);
       });
     }
-    // Event listeners for team buttons
+    // Event listeners for GOAL button: Only use mousedown (no need to stop on mouseup)
     document.getElementById("homeGoalBtn").addEventListener("mousedown", () => {
       const team = document.getElementById("homeTeamSelect").value;
       startGoalSound(team);
     });
-    document.getElementById("homeGoalBtn").addEventListener("mouseup", stopGoalSound);
-    document.getElementById("homeGoalBtn").addEventListener("mouseleave", stopGoalSound);
     document.getElementById("awayGoalBtn").addEventListener("mousedown", () => {
       const team = document.getElementById("awayTeamSelect").value;
       startGoalSound(team);
     });
-    document.getElementById("awayGoalBtn").addEventListener("mouseup", stopGoalSound);
-    document.getElementById("awayGoalBtn").addEventListener("mouseleave", stopGoalSound);
+    // STOP button stops sustained horn and cancels goal song.
+    document.getElementById("bottomControls").addEventListener("click", (e) => {
+      if (e.target.innerText === "STOP") {
+        stopGoalSound();
+        stopPlayback();
+      }
+    });
+    // Other buttons for powerplay and win
     document.getElementById("homePPBtn").addEventListener("click", () => {
       const team = document.getElementById("homeTeamSelect").value;
       playTeamSound(team, "Powerplay");
