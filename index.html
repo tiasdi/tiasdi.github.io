@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hockey DJ Webapp</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Full screen and reset styles -->
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      background: #222;
+      color: #ddd;
+      font-family: Arial, sans-serif;
+      box-sizing: border-box;
+    }
+    /* App container fills the screen */
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      width: 100vw;
+    }
+    /* Top section: Home and Away, side-by-side */
+    #teamSection {
+      display: flex;
+      flex: 0 0 40%;
+      width: 100%;
+    }
+    .team-panel {
+      flex: 1;
+      padding: 10px;
+      box-sizing: border-box;
+      text-align: center;
+    }
+    .team-header {
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+    /* Metallic, 3D button style */
+    .btn {
+      display: inline-block;
+      padding: 10px 20px;
+      margin: 5px;
+      border: 1px solid #555;
+      border-radius: 5px;
+      background: linear-gradient(145deg, #333, #111);
+      box-shadow: 3px 3px 6px #000, -3px -3px 6px #444;
+      color: #ddd;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn:active {
+      box-shadow: inset 3px 3px 6px #000;
+    }
+    /* Big GOAL button overrides */
+    .big-btn {
+      width: 100%;
+      height: 25vh;
+      font-size: 2em;
+      margin: 0;
+    }
+    /* 8-bit style text for track section */
+    .track-label {
+      font-family: 'Press Start 2P', cursive;
+      font-size: 14px;
+      margin-right: 10px;
+    }
+    /* Track section styling */
+    #trackSection {
+      flex: 0 0 40%;
+      width: 100%;
+      text-align: center;
+      padding-top: 10px;
+    }
+    /* Genre toggle buttons: red when inactive, green and bold when active */
+    .genre-btn {
+      display: inline-block;
+      padding: 5px 10px;
+      margin: 3px;
+      border: 1px solid #555;
+      border-radius: 3px;
+      background: #333;
+      box-shadow: 2px 2px 4px #000, -2px -2px 4px #444;
+      cursor: pointer;
+      font-size: 14px;
+      color: red;
+    }
+    .genre-btn.active {
+      color: green;
+      font-weight: bold;
+    }
+    /* Bottom control buttons */
+    #bottomControls {
+      flex: 0 0 20%;
+      width: 100%;
+      text-align: center;
+      padding-top: 10px;
+    }
+    .divider {
+      border-top: 2px solid #555;
+      margin: 10px 0;
+    }
+  </style>
+  <!-- Load an 8-bit font -->
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <!-- Top Section: Teams -->
+    <div id="teamSection">
+      <div class="team-panel" id="homeTeamPanel">
+        <div class="team-header">
+          Home Team:
+          <select id="homeTeamSelect">
+            <option value="Langley">Langley</option>
+            <!-- Add additional team options here -->
+          </select>
+        </div>
+        <!-- Big GOAL button -->
+        <button class="btn big-btn" id="homeGoalBtn">GOAL!</button>
+        <br>
+        <button class="btn" id="homePPBtn">Powerplay</button>
+        <br>
+        <button class="btn" id="homeWinBtn">Win</button>
+      </div>
+
+      <div class="team-panel" id="awayTeamPanel">
+        <div class="team-header">
+          Away Team:
+          <select id="awayTeamSelect">
+            <option value="Langley">Langley</option>
+            <!-- Add additional team options here -->
+          </select>
+        </div>
+        <!-- Big GOAL button -->
+        <button class="btn big-btn" id="awayGoalBtn">GOAL!</button>
+        <br>
+        <button class="btn" id="awayPPBtn">Powerplay</button>
+        <br>
+        <button class="btn" id="awayWinBtn">Win</button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Track Section -->
+    <div id="trackSection">
+      <div id="track1" style="margin-bottom: 10px;">
+        <span class="track-label" id="track1Label">>> Track 1: [placeholder]</span>
+        <button class="btn" onclick="randomizeTrack(1)">NEXT</button>
+        <button class="btn" onclick="selectTrack(1)">SELECT</button>
+      </div>
+      <div id="track2" style="margin-bottom: 10px;">
+        <span class="track-label" id="track2Label">Track 2: [placeholder]</span>
+        <button class="btn" onclick="randomizeTrack(2)">NEXT</button>
+        <button class="btn" onclick="selectTrack(2)">SELECT</button>
+      </div>
+      <!-- Genre buttons -->
+      <div id="genreSelection">
+        <span class="genre-btn" data-genre="hype" onclick="toggleGenre(this)">Hype</span>
+        <span class="genre-btn" data-genre="intense" onclick="toggleGenre(this)">Intense</span>
+        <span class="genre-btn active" data-genre="popular" onclick="toggleGenre(this)">Popular</span>
+        <span class="genre-btn" data-genre="rock" onclick="toggleGenre(this)">Rock</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Bottom Controls -->
+    <div id="bottomControls">
+      <button class="btn" onclick="stopPlayback()">STOP</button>
+      <button class="btn" onclick="playSelectedTrack()">PLAY</button>
+    </div>
+  </div>
+
+  <script>
+    /*****************
+     * Global State
+     *****************/
+    let currentAudio = null;
+    let currentTrack = null; // 1 or 2
+    const trackSongs = { 1: null, 2: null };
+    const songsByGenre = {
+      hype: ["songs/hype1.mp3", "songs/hype2.mp3"],
+      intense: ["songs/intense1.mp3", "songs/intense2.mp3"],
+      popular: ["songs/popular1.mp3", "songs/popular2.mp3"],
+      rock: ["songs/rock1.mp3", "songs/rock2.mp3"]
+    };
+    let activeGenres = { popular: true };
+
+    // Horn/goal timers
+    let hornInterval = null;
+    let goalTimeout = null;
+    let goalPlaying = false;
+
+    // Web Audio API context and reverb buffer for horn sounds
+    let audioContext;
+    let reverbBuffer = null;
+    
+    function initAudioContext() {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        // Load impulse response for reverb (ensure impulse.wav exists in your project folder)
+        fetch('impulse.wav')
+          .then(response => response.arrayBuffer())
+          .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
+          .then(buffer => { reverbBuffer = buffer; })
+          .catch(err => console.error('Error loading impulse response:', err));
+      }
+    }
+
+    /*****************
+     * Audio Utilities
+     *****************/
+    function fadeAudio(audio, targetVolume, duration, callback) {
+      const steps = 20;
+      const stepTime = duration / steps;
+      const volumeStep = (targetVolume - audio.volume) / steps;
+      let currentStep = 0;
+      const fadeInterval = setInterval(() => {
+        currentStep++;
+        audio.volume = Math.min(Math.max(audio.volume + volumeStep, 0), 1);
+        if (currentStep >= steps) {
+          clearInterval(fadeInterval);
+          if (callback) callback();
+        }
+      }, stepTime);
+    }
+
+    function crossfadeTo(newAudio) {
+      if (currentAudio) {
+        fadeAudio(currentAudio, 0, 800, () => {
+          currentAudio.pause();
+          currentAudio.currentTime = 0;
+        });
+      }
+      newAudio.volume = 0;
+      newAudio.play();
+      fadeAudio(newAudio, 1, 800);
+      currentAudio = newAudio;
+    }
+
+    function playSong(songPath) {
+      const newAudio = new Audio(songPath);
+      newAudio.onended = () => { currentAudio = null; };
+      crossfadeTo(newAudio);
+    }
+
+    /*****************
+     * Team Sound Functions
+     *****************/
+    function getTeamSoundPath(team, soundType) {
+      return `Teams/${team}/${soundType}.mp3`;
+    }
+
+    function playTeamSound(team, soundType) {
+      const path = getTeamSoundPath(team, soundType);
+      playSong(path);
+    }
+
+    /*****************
+     * Horn/Goal Logic with Reverb
+     *****************/
+    function playHornSound(team) {
+      const hornPath = getTeamSoundPath(team, "Horn");
+      let hornAudio = new Audio(hornPath);
+      hornAudio.crossOrigin = "anonymous";
+      hornAudio.play();
+      
+      let source = audioContext.createMediaElementSource(hornAudio);
+      let gainNode = audioContext.createGain();
+      gainNode.gain.value = 0;
+      let convolver = audioContext.createConvolver();
+      if (reverbBuffer) {
+        convolver.buffer = reverbBuffer;
+      }
+      source.connect(gainNode);
+      gainNode.connect(convolver);
+      convolver.connect(audioContext.destination);
+      gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+      gainNode.gain.linearRampToValueAtTime(1, audioContext.currentTime + 0.55);
+    }
+
+    function startGoalSound(team) {
+      goalPlaying = false;
+      playHornSound(team);
+      hornInterval = setInterval(() => {
+        playHornSound(team);
+      }, 500);
+      const delay = 2000 + Math.random() * 2000;
+      goalTimeout = setTimeout(() => {
+        if (!goalPlaying) {
+          const goalPath = getTeamSoundPath(team, "Goal");
+          playSong(goalPath);
+          goalPlaying = true;
+        }
+      }, delay);
+    }
+
+    function stopGoalSound() {
+      if (hornInterval) clearInterval(hornInterval);
+      if (goalTimeout) clearTimeout(goalTimeout);
+      hornInterval = null;
+      goalTimeout = null;
+    }
+
+    /*****************
+     * Track Control Functions
+     *****************/
+    function randomizeTrack(trackNumber) {
+      let available = [];
+      for (let genre in songsByGenre) {
+        if (activeGenres[genre]) {
+          available = available.concat(songsByGenre[genre]);
+        }
+      }
+      if (available.length === 0) {
+        for (let genre in songsByGenre) {
+          available = available.concat(songsByGenre[genre]);
+        }
+      }
+      const randomSong = available[Math.floor(Math.random() * available.length)];
+      trackSongs[trackNumber] = randomSong;
+      const label = document.getElementById(`track${trackNumber}Label`);
+      label.textContent = (currentTrack === trackNumber ? ">> " : "") +
+                          `Track ${trackNumber}: ${randomSong.split('/').pop()}`;
+    }
+
+    function selectTrack(trackNumber) {
+      currentTrack = trackNumber;
+      for (let i = 1; i <= 2; i++) {
+        const label = document.getElementById(`track${i}Label`);
+        if (i === trackNumber) {
+          label.textContent = ">> " + label.textContent.replace(">> ", "");
+        } else {
+          label.textContent = label.textContent.replace(">> ", "");
+        }
+      }
+    }
+
+    function playSelectedTrack() {
+      if (currentTrack && trackSongs[currentTrack]) {
+        playSong(trackSongs[currentTrack]);
+      } else {
+        alert("Please select a track by randomizing and then selecting it.");
+      }
+    }
+
+    function stopPlayback() {
+      if (currentAudio) {
+        fadeAudio(currentAudio, 0, 800, () => {
+          currentAudio.pause();
+          currentAudio.currentTime = 0;
+          currentAudio = null;
+        });
+      }
+    }
+
+    /*****************
+     * Genre Selection
+     *****************/
+    function toggleGenre(element) {
+      const genre = element.getAttribute("data-genre");
+      if (activeGenres[genre]) {
+        delete activeGenres[genre];
+        element.classList.remove("active");
+      } else {
+        activeGenres[genre] = true;
+        element.classList.add("active");
+      }
+    }
+
+    /*****************
+     * Event Listeners for Team Buttons
+     *****************/
+    document.getElementById("homeGoalBtn").addEventListener("mousedown", () => {
+      const team = document.getElementById("homeTeamSelect").value;
+      startGoalSound(team);
+    });
+    document.getElementById("homeGoalBtn").addEventListener("mouseup", stopGoalSound);
+    document.getElementById("homeGoalBtn").addEventListener("mouseleave", stopGoalSound);
+
+    document.getElementById("awayGoalBtn").addEventListener("mousedown", () => {
+      const team = document.getElementById("awayTeamSelect").value;
+      startGoalSound(team);
+    });
+    document.getElementById("awayGoalBtn").addEventListener("mouseup", stopGoalSound);
+    document.getElementById("awayGoalBtn").addEventListener("mouseleave", stopGoalSound);
+
+    document.getElementById("homePPBtn").addEventListener("click", () => {
+      const team = document.getElementById("homeTeamSelect").value;
+      playTeamSound(team, "Powerplay");
+    });
+    document.getElementById("homeWinBtn").addEventListener("click", () => {
+      const team = document.getElementById("homeTeamSelect").value;
+      playTeamSound(team, "Win");
+    });
+    document.getElementById("awayPPBtn").addEventListener("click", () => {
+      const team = document.getElementById("awayTeamSelect").value;
+      playTeamSound(team, "Powerplay");
+    });
+    document.getElementById("awayWinBtn").addEventListener("click", () => {
+      const team = document.getElementById("awayTeamSelect").value;
+      playTeamSound(team, "Win");
+    });
+
+    /*****************
+     * Initialization
+     *****************/
+    initAudioContext();
+    // Static team options are already in the HTML.
+    randomizeTrack(1);
+    randomizeTrack(2);
+    selectTrack(1);
+  </script>
+</body>
+</html>
