@@ -155,12 +155,12 @@
   </div>
 
   <script>
-    // Configurable team list (edit here to add more teams)
+    // Configurable team list
     const teams = ["Langley"];
 
-    // Global state variables
+    // Global state
     let currentAudio = null;
-    let currentTrack = null; // 1 or 2
+    let currentTrack = null;
     let currentGoalTeam = null;
     const trackSongs = { 1: null, 2: null };
     const songsByGenre = {
@@ -174,7 +174,7 @@
     let goalTimeout = null;
     let goalPlaying = false;
 
-    // Audio playback utilities (original system)
+    // Audio playback utilities
     function fadeAudio(audio, targetVolume, duration, callback) {
       const steps = 20;
       const stepTime = duration / steps;
@@ -219,7 +219,7 @@
       playSong(path);
     }
 
-    // Horn/Goal logic with reverb for horn sounds using Web Audio API
+    // Horn/Goal logic with reverb using Web Audio API
     let audioContext, reverbBuffer;
     function initAudioContext() {
       if (!audioContext) {
@@ -236,7 +236,8 @@
           .catch(err => console.error('Error loading impulse response: ' + err));
       }
     }
-    // playHornSound: always fades in over 0.6s; if isRepeating, it fades out over 0.35s.
+    // playHornSound: every horn instance fades in over 0.6s.
+    // If isRepeating is true, it then fades out over 0.35s.
     function playHornSound(team, isRepeating = true) {
       const hornPath = getTeamSoundPath(team, "Horn");
       let hornAudio = new Audio(hornPath);
@@ -266,14 +267,14 @@
         console.error("Error processing horn with reverb: " + e);
       }
     }
-    // startGoalSound: starts repeating horn plays (with reverb fade in/out) and schedules Goal.mp3 after a delay.
+    // startGoalSound: triggers repeated horn plays and schedules the goal song.
     function startGoalSound(team) {
       goalPlaying = false;
       currentGoalTeam = team;
       playHornSound(team, true);
       hornInterval = setInterval(() => {
         playHornSound(team, true);
-      }, 500);
+      }, 1000); // Increased interval to 1000ms for full fade-in effect
       const delay = 2000 + Math.random() * 2000;
       goalTimeout = setTimeout(() => {
         if (!goalPlaying) {
@@ -283,7 +284,7 @@
         }
       }, delay);
     }
-    // stopGoalSound: stops repeating horn sounds and plays one final horn (without fade-out).
+    // stopGoalSound: stops repeating horns and plays a final horn without fade-out.
     function stopGoalSound() {
       if (hornInterval) clearInterval(hornInterval);
       if (goalTimeout) clearTimeout(goalTimeout);
@@ -352,7 +353,7 @@
         element.classList.add("active");
       }
     }
-    // Populate team dropdowns using the hardcoded array
+    // Populate team dropdowns (hardcoded)
     function populateTeamSelects(teamArray) {
       const homeSelect = document.getElementById("homeTeamSelect");
       const awaySelect = document.getElementById("awayTeamSelect");
