@@ -95,6 +95,14 @@
       border-top: 2px solid #555;
       margin: 10px 0;
     }
+    /* Visible version footer */
+    #versionInfo {
+      text-align: center;
+      font-size: 12px;
+      padding: 5px;
+      background: #111;
+      color: #aaa;
+    }
   </style>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 </head>
@@ -152,20 +160,22 @@
       <button class="btn" id="stopBtn">STOP</button>
       <button class="btn" onclick="playSelectedTrack()">PLAY</button>
     </div>
+    <!-- Visible version footer -->
+    <div id="versionInfo">Hockey DJ Webapp Version 1.7</div>
   </div>
 
   <script>
     // Display version alert on window load.
     window.onload = function() {
-      alert("Hockey DJ Webapp Version 1.6");
+      alert("Hockey DJ Webapp Version 1.7");
     };
 
-    // Configurable team list (edit this array to add more teams)
+    // Hardcoded team list
     const teams = ["Langley"];
 
-    // Global state variables
+    // Global state
     let currentAudio = null;
-    let currentTrack = null; // 1 or 2
+    let currentTrack = null;
     let currentGoalTeam = null;
     const trackSongs = { 1: null, 2: null };
     const songsByGenre = {
@@ -179,10 +189,10 @@
     let goalTimeout = null;
     let goalPlaying = false;
 
-    // Global variable for sustained horn
+    // Global sustained horn variable
     let sustainedHorn = null;
 
-    // Audio playback utilities (original system)
+    // Audio playback utilities
     function fadeAudio(audio, targetVolume, duration, callback) {
       const steps = 20;
       const stepTime = duration / steps;
@@ -245,8 +255,8 @@
       }
     }
 
-    // playHornSound: plays a horn instance with a 0.6s fade-in.
-    // If isRepeating is true, it also applies a 0.35s fade-out to the instance.
+    // playHornSound: Plays a horn instance with a 0.6s fade-in.
+    // If isRepeating is true, applies a 0.35s fade-out.
     function playHornSound(team, isRepeating = true) {
       const hornPath = getTeamSoundPath(team, "Horn");
       let hornAudio = new Audio(hornPath);
@@ -277,16 +287,16 @@
       }
     }
 
-    // startGoalSound: On GOAL button press, start repeated horn plays every 300ms (overlapping).
-    // Also schedule the Goal.mp3 to play 2-4 seconds after the initial press.
+    // startGoalSound: On GOAL button press, start repeated horn plays overlapping every 300ms,
+    // and schedule the goal song 2-4 seconds after the initial press.
     function startGoalSound(team) {
       goalPlaying = false;
       currentGoalTeam = team;
-      // Start repeated horn plays at 300ms intervals.
+      // Start repeated horn plays every 300ms
       hornInterval = setInterval(() => {
         playHornSound(team, true);
       }, 300);
-      // Schedule the goal song 2-4 seconds after initial press.
+      // Schedule the goal song to play 2-4 seconds after initial press
       const delay = 2000 + Math.random() * 2000;
       goalTimeout = setTimeout(() => {
         if (!goalPlaying) {
@@ -297,70 +307,18 @@
       }, delay);
     }
 
-    // releaseGoalSound: When GOAL button is released, stop repeated horn plays.
-    function releaseGoalSound() {
+    // stopGoalSound: On STOP button press, cancel the goal song and stop repeated horn plays.
+    function stopGoalSound() {
       if (hornInterval) clearInterval(hornInterval);
       hornInterval = null;
-      // Also fade out any sustained horn (if one exists)
-      if (sustainedHorn) {
-        stopSustainedHorn();
-      }
-    }
-
-    // STOP button: Cancel the goal song timer and release the sustained horn.
-    function stopGoalSound() {
-      if (goalTimeout) {
-        clearTimeout(goalTimeout);
-        goalTimeout = null;
-      }
-      releaseGoalSound();
+      if (goalTimeout) clearTimeout(goalTimeout);
+      goalTimeout = null;
       currentGoalTeam = null;
     }
 
-    // For sustained horn, we create a looped horn sound that fades in and sustains.
-    let sustainedHorn = null;
-    function startSustainedHorn(team) {
-      if (sustainedHorn !== null) return;
-      const hornPath = getTeamSoundPath(team, "Horn");
-      let hornAudio = new Audio(hornPath);
-      hornAudio.crossOrigin = "anonymous";
-      hornAudio.loop = true;
-      hornAudio.play().catch(e => console.error("Horn play error: " + e));
-      if (audioContext && audioContext.state === 'suspended') {
-        audioContext.resume();
-      }
-      try {
-        let source = audioContext.createMediaElementSource(hornAudio);
-        let gainNode = audioContext.createGain();
-        gainNode.gain.value = 0;
-        let convolver = audioContext.createConvolver();
-        if (reverbBuffer) {
-          convolver.buffer = reverbBuffer;
-        }
-        source.connect(gainNode);
-        gainNode.connect(convolver);
-        convolver.connect(audioContext.destination);
-        gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-        gainNode.gain.linearRampToValueAtTime(1, audioContext.currentTime + 0.6);
-        sustainedHorn = { audio: hornAudio, gainNode: gainNode };
-      } catch(e) {
-        console.error("Error processing sustained horn with reverb: " + e);
-      }
-    }
-    function stopSustainedHorn() {
-      if (!sustainedHorn) return;
-      try {
-        let gainNode = sustainedHorn.gainNode;
-        gainNode.gain.setValueAtTime(gainNode.gain.value, audioContext.currentTime);
-        gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.35);
-        setTimeout(() => {
-          sustainedHorn.audio.pause();
-          sustainedHorn.audio.currentTime = 0;
-          sustainedHorn = null;
-        }, 350);
-      } catch(e) {
-        console.error("Error stopping sustained horn: " + e);
-      }
+    // releaseGoalSound: When GOAL button is released, stop the sustained horn (if any).
+    function releaseGoalSound() {
+      stopGoalSound();
     }
 
     // Track control functions
@@ -442,28 +400,20 @@
       const team = document.getElementById("homeTeamSelect").value;
       startGoalSound(team);
     });
-    document.getElementById("homeGoalBtn").addEventListener("mouseup", () => {
-      releaseGoalSound();
-    });
-    document.getElementById("homeGoalBtn").addEventListener("mouseleave", () => {
-      releaseGoalSound();
-    });
+    document.getElementById("homeGoalBtn").addEventListener("mouseup", releaseGoalSound);
+    document.getElementById("homeGoalBtn").addEventListener("mouseleave", releaseGoalSound);
     document.getElementById("awayGoalBtn").addEventListener("mousedown", () => {
       const team = document.getElementById("awayTeamSelect").value;
       startGoalSound(team);
     });
-    document.getElementById("awayGoalBtn").addEventListener("mouseup", () => {
-      releaseGoalSound();
-    });
-    document.getElementById("awayGoalBtn").addEventListener("mouseleave", () => {
-      releaseGoalSound();
-    });
-    // STOP button stops everything.
+    document.getElementById("awayGoalBtn").addEventListener("mouseup", releaseGoalSound);
+    document.getElementById("awayGoalBtn").addEventListener("mouseleave", releaseGoalSound);
+    // STOP button stops everything
     document.getElementById("stopBtn").addEventListener("click", () => {
       stopGoalSound();
       stopPlayback();
     });
-    // Event listeners for other sound buttons
+    // Event listeners for other buttons
     document.getElementById("homePPBtn").addEventListener("click", () => {
       const team = document.getElementById("homeTeamSelect").value;
       playTeamSound(team, "Powerplay");
