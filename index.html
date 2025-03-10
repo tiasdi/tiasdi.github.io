@@ -8,38 +8,54 @@
     html, body {
       margin: 0;
       padding: 0;
-      height: 100%;
-      width: 100%;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
       background: #222;
       color: #ddd;
       font-family: Arial, sans-serif;
       box-sizing: border-box;
     }
+    /* Main container fills exactly the viewport */
     #app {
+      width: 100vw;
+      height: 100vh;
       display: flex;
       flex-direction: column;
-      height: 100vh;
-      width: 100vw;
     }
+    /* Sections by height: 50% team, 20% track, 30% controls */
     #teamSection {
-      display: flex;
-      flex: 0 0 40%;
       width: 100%;
+      height: 50%;
+      display: flex;
     }
     .team-panel {
-      flex: 1;
-      padding: 10px;
-      box-sizing: border-box;
+      width: 50%;
+      height: 100%;
+      padding: 2px;
       text-align: center;
     }
     .team-header {
       font-size: 20px;
-      margin-bottom: 10px;
+      margin-bottom: 2px;
     }
+    #trackSection {
+      width: 100%;
+      height: 20%;
+      text-align: center;
+      padding-top: 2px;
+    }
+    #bottomControls {
+      width: 100%;
+      height: 30%;
+      text-align: center;
+      padding-top: 2px;
+    }
+    /* Buttons: full width of container, snug margins, enhanced pressed effect */
     .btn {
-      display: inline-block;
-      padding: 10px 20px;
-      margin: 5px;
+      width: 100%;
+      padding: 8px;
+      margin: 2px 0;
       border: 1px solid #555;
       border-radius: 5px;
       background: linear-gradient(145deg, #333, #111);
@@ -50,29 +66,21 @@
       transition: all 0.2s;
     }
     .btn:active {
-      box-shadow: inset 3px 3px 6px #000;
+      box-shadow: inset 5px 5px 10px rgba(0,0,0,0.7);
     }
     .big-btn {
-      width: 100%;
       height: 25vh;
       font-size: 2em;
-      margin: 0;
     }
     .track-label {
       font-family: 'Press Start 2P', cursive;
       font-size: 14px;
-      margin-right: 10px;
-    }
-    #trackSection {
-      flex: 0 0 40%;
-      width: 100%;
-      text-align: center;
-      padding-top: 10px;
+      margin-right: 5px;
     }
     .genre-btn {
       display: inline-block;
       padding: 5px 10px;
-      margin: 3px;
+      margin: 2px;
       border: 1px solid #555;
       border-radius: 3px;
       background: #333;
@@ -85,15 +93,9 @@
       color: green;
       font-weight: bold;
     }
-    #bottomControls {
-      flex: 0 0 20%;
-      width: 100%;
-      text-align: center;
-      padding-top: 10px;
-    }
     .divider {
       border-top: 2px solid #555;
-      margin: 10px 0;
+      margin: 2px 0;
     }
     /* Visible version footer */
     #versionInfo {
@@ -108,42 +110,40 @@
 </head>
 <body>
   <div id="app">
+    <!-- Team Section (50% height) -->
     <div id="teamSection">
       <div class="team-panel" id="homeTeamPanel">
         <div class="team-header">
           Home Team:
           <select id="homeTeamSelect">
-            <!-- Options populated by JavaScript -->
+            <!-- Populated by JavaScript -->
           </select>
         </div>
         <button class="btn big-btn" id="homeGoalBtn">GOAL!</button>
-        <br>
         <button class="btn" id="homePPBtn">Powerplay</button>
-        <br>
         <button class="btn" id="homeWinBtn">Win</button>
       </div>
       <div class="team-panel" id="awayTeamPanel">
         <div class="team-header">
           Away Team:
           <select id="awayTeamSelect">
-            <!-- Options populated by JavaScript -->
+            <!-- Populated by JavaScript -->
           </select>
         </div>
         <button class="btn big-btn" id="awayGoalBtn">GOAL!</button>
-        <br>
         <button class="btn" id="awayPPBtn">Powerplay</button>
-        <br>
         <button class="btn" id="awayWinBtn">Win</button>
       </div>
     </div>
     <div class="divider"></div>
+    <!-- Track Section (20% height) -->
     <div id="trackSection">
-      <div id="track1" style="margin-bottom: 10px;">
+      <div id="track1">
         <span class="track-label" id="track1Label">>> Track 1: [placeholder]</span>
         <button class="btn" onclick="randomizeTrack(1)">NEXT</button>
         <button class="btn" onclick="selectTrack(1)">SELECT</button>
       </div>
-      <div id="track2" style="margin-bottom: 10px;">
+      <div id="track2">
         <span class="track-label" id="track2Label">Track 2: [placeholder]</span>
         <button class="btn" onclick="randomizeTrack(2)">NEXT</button>
         <button class="btn" onclick="selectTrack(2)">SELECT</button>
@@ -156,24 +156,25 @@
       </div>
     </div>
     <div class="divider"></div>
+    <!-- Bottom Controls (30% height) -->
     <div id="bottomControls">
       <button class="btn" id="stopBtn">STOP</button>
       <button class="btn" onclick="playSelectedTrack()">PLAY</button>
     </div>
     <!-- Visible version footer -->
-    <div id="versionInfo">Hockey DJ Webapp Version 1.7</div>
+    <div id="versionInfo">Hockey DJ Webapp Version 1.8</div>
   </div>
 
   <script>
     // Display version alert on window load.
     window.onload = function() {
-      alert("Hockey DJ Webapp Version 1.7");
+      alert("Hockey DJ Webapp Version 1.8");
     };
 
-    // Hardcoded team list
+    // Hardcoded team list (editable)
     const teams = ["Langley"];
 
-    // Global state
+    // Global state variables
     let currentAudio = null;
     let currentTrack = null;
     let currentGoalTeam = null;
@@ -189,10 +190,7 @@
     let goalTimeout = null;
     let goalPlaying = false;
 
-    // Global sustained horn variable
-    let sustainedHorn = null;
-
-    // Audio playback utilities
+    // Audio playback utilities (original system)
     function fadeAudio(audio, targetVolume, duration, callback) {
       const steps = 20;
       const stepTime = duration / steps;
@@ -255,9 +253,8 @@
       }
     }
 
-    // playHornSound: Plays a horn instance with a 0.6s fade-in.
-    // If isRepeating is true, applies a 0.35s fade-out.
-    function playHornSound(team, isRepeating = true) {
+    // playHornSoundCustom: plays a horn instance with specified fade times.
+    function playHornSoundCustom(team, fadeInTime, fadeOutTime) {
       const hornPath = getTeamSoundPath(team, "Horn");
       let hornAudio = new Audio(hornPath);
       hornAudio.crossOrigin = "anonymous";
@@ -276,27 +273,41 @@
         source.connect(gainNode);
         gainNode.connect(convolver);
         convolver.connect(audioContext.destination);
-        gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-        gainNode.gain.linearRampToValueAtTime(1, audioContext.currentTime + 0.6);
-        if (isRepeating) {
-          gainNode.gain.setValueAtTime(1, audioContext.currentTime + 0.6);
-          gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.6 + 0.35);
+        let now = audioContext.currentTime;
+        gainNode.gain.setValueAtTime(0, now);
+        if (fadeInTime > 0) {
+          gainNode.gain.linearRampToValueAtTime(1, now + fadeInTime);
+        } else {
+          gainNode.gain.setValueAtTime(1, now);
+        }
+        if (fadeOutTime > 0) {
+          gainNode.gain.setValueAtTime(1, now + fadeInTime);
+          gainNode.gain.linearRampToValueAtTime(0, now + fadeInTime + fadeOutTime);
+        } else {
+          gainNode.gain.setValueAtTime(1, now + fadeInTime);
         }
       } catch(e) {
         console.error("Error processing horn with reverb: " + e);
       }
     }
 
-    // startGoalSound: On GOAL button press, start repeated horn plays overlapping every 300ms,
-    // and schedule the goal song 2-4 seconds after the initial press.
+    /* 
+      GOAL Button Behavior:
+      - First horn instance (on mousedown): fade in 0.0s, fade out 0.4s.
+      - Repeating instances (every 250ms): fade in 0.6s, fade out 0.4s.
+      - Final instance (on button release): fade in 0.6s, fade out 0.0s.
+      - Schedule Goal.mp3 to play 2–4s after initial press.
+    */
     function startGoalSound(team) {
       goalPlaying = false;
       currentGoalTeam = team;
-      // Start repeated horn plays every 300ms
+      // First instance immediately:
+      playHornSoundCustom(team, 0.0, 0.4);
+      // Start repeating instances every 250ms:
       hornInterval = setInterval(() => {
-        playHornSound(team, true);
-      }, 300);
-      // Schedule the goal song to play 2-4 seconds after initial press
+        playHornSoundCustom(team, 0.6, 0.4);
+      }, 250);
+      // Schedule the goal song 2-4 seconds after initial press:
       const delay = 2000 + Math.random() * 2000;
       goalTimeout = setTimeout(() => {
         if (!goalPlaying) {
@@ -306,19 +317,16 @@
         }
       }, delay);
     }
-
-    // stopGoalSound: On STOP button press, cancel the goal song and stop repeated horn plays.
+    // On GOAL button release, stop repeating horns and play final instance:
     function stopGoalSound() {
       if (hornInterval) clearInterval(hornInterval);
       hornInterval = null;
       if (goalTimeout) clearTimeout(goalTimeout);
       goalTimeout = null;
-      currentGoalTeam = null;
-    }
-
-    // releaseGoalSound: When GOAL button is released, stop the sustained horn (if any).
-    function releaseGoalSound() {
-      stopGoalSound();
+      if (currentGoalTeam) {
+        playHornSoundCustom(currentGoalTeam, 0.6, 0.0);
+        currentGoalTeam = null;
+      }
     }
 
     // Track control functions
@@ -400,20 +408,20 @@
       const team = document.getElementById("homeTeamSelect").value;
       startGoalSound(team);
     });
-    document.getElementById("homeGoalBtn").addEventListener("mouseup", releaseGoalSound);
-    document.getElementById("homeGoalBtn").addEventListener("mouseleave", releaseGoalSound);
+    document.getElementById("homeGoalBtn").addEventListener("mouseup", stopGoalSound);
+    document.getElementById("homeGoalBtn").addEventListener("mouseleave", stopGoalSound);
     document.getElementById("awayGoalBtn").addEventListener("mousedown", () => {
       const team = document.getElementById("awayTeamSelect").value;
       startGoalSound(team);
     });
-    document.getElementById("awayGoalBtn").addEventListener("mouseup", releaseGoalSound);
-    document.getElementById("awayGoalBtn").addEventListener("mouseleave", releaseGoalSound);
-    // STOP button stops everything
+    document.getElementById("awayGoalBtn").addEventListener("mouseup", stopGoalSound);
+    document.getElementById("awayGoalBtn").addEventListener("mouseleave", stopGoalSound);
+    // STOP button stops everything.
     document.getElementById("stopBtn").addEventListener("click", () => {
       stopGoalSound();
       stopPlayback();
     });
-    // Event listeners for other buttons
+    // Event listeners for other sound buttons.
     document.getElementById("homePPBtn").addEventListener("click", () => {
       const team = document.getElementById("homeTeamSelect").value;
       playTeamSound(team, "Powerplay");
