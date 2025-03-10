@@ -116,8 +116,7 @@
         <div class="team-header">
           Home Team:
           <select id="homeTeamSelect">
-            <option value="Langley">Langley</option>
-            <!-- Add additional team options here -->
+            <!-- Options populated from hardcoded teams array -->
           </select>
         </div>
         <!-- Big GOAL button -->
@@ -132,8 +131,7 @@
         <div class="team-header">
           Away Team:
           <select id="awayTeamSelect">
-            <option value="Langley">Langley</option>
-            <!-- Add additional team options here -->
+            <!-- Options populated from hardcoded teams array -->
           </select>
         </div>
         <!-- Big GOAL button -->
@@ -179,6 +177,11 @@
 
   <script>
     /*****************
+     * Configurable Team List
+     *****************/
+    const teams = ["Langley"]; // Edit this array to add more teams
+
+    /*****************
      * Global State
      *****************/
     let currentAudio = null;
@@ -197,24 +200,8 @@
     let goalTimeout = null;
     let goalPlaying = false;
 
-    // Web Audio API context and reverb buffer for horn sounds
-    let audioContext;
-    let reverbBuffer = null;
-    
-    function initAudioContext() {
-      if (!audioContext) {
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        // Load impulse response for reverb (ensure impulse.wav exists in your project folder)
-        fetch('impulse.wav')
-          .then(response => response.arrayBuffer())
-          .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
-          .then(buffer => { reverbBuffer = buffer; })
-          .catch(err => console.error('Error loading impulse response:', err));
-      }
-    }
-
     /*****************
-     * Audio Utilities
+     * Audio Playback Utilities (Original System)
      *****************/
     function fadeAudio(audio, targetVolume, duration, callback) {
       const steps = 20;
@@ -263,28 +250,51 @@
     }
 
     /*****************
-     * Horn/Goal Logic with Reverb
+     * Horn/Goal Logic with Reverb for Horns
      *****************/
+    // For the horn sound, we use the Web Audio API with a convolver node for reverb.
+    let audioContext, reverbBuffer;
+    function initAudioContext() {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        // Load impulse response for reverb (ensure impulse.wav exists in your project folder)
+        fetch('impulse.wav')
+          .then(response => response.arrayBuffer())
+          .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
+          .then(buffer => { reverbBuffer = buffer; })
+          .catch(err => console.error('Error loading impulse response:', err));
+      }
+    }
+
     function playHornSound(team) {
       const hornPath = getTeamSoundPath(team, "Horn");
       let hornAudio = new Audio(hornPath);
       hornAudio.crossOrigin = "anonymous";
-      hornAudio.play();
-      
-      let source = audioContext.createMediaElementSource(hornAudio);
-      let gainNode = audioContext.createGain();
-      gainNode.gain.value = 0;
-      let convolver = audioContext.createConvolver();
-      if (reverbBuffer) {
-        convolver.buffer = reverbBuffer;
+      hornAudio.play().catch(e => console.error("Horn play error:", e));
+      // Ensure the AudioContext is running (browsers may suspend it)
+      if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume();
       }
-      source.connect(gainNode);
-      gainNode.connect(convolver);
-      convolver.connect(audioContext.destination);
-      gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-      gainNode.gain.linearRampToValueAtTime(1, audioContext.currentTime + 0.55);
+      try {
+        let source = audioContext.createMediaElementSource(hornAudio);
+        let gainNode = audioContext.createGain();
+        gainNode.gain.value = 0;
+        let convolver = audioContext.createConvolver();
+        if (reverbBuffer) {
+          convolver.buffer = reverbBuffer;
+        }
+        source.connect(gainNode);
+        gainNode.connect(convolver);
+        convolver.connect(audioContext.destination);
+        // Fade in the horn over 0.55 seconds
+        gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(1, audioContext.currentTime + 0.55);
+      } catch(e) {
+        console.error("Error processing horn with reverb:", e);
+      }
     }
 
+    // Use the original playHornSound system replaced with reverb version.
     function startGoalSound(team) {
       goalPlaying = false;
       playHornSound(team);
@@ -375,6 +385,26 @@
     }
 
     /*****************
+     * Populate Team Dropdowns (Hardcoded)
+     *****************/
+    function populateTeamSelects(teamArray) {
+      const homeSelect = document.getElementById("homeTeamSelect");
+      const awaySelect = document.getElementById("awayTeamSelect");
+      homeSelect.innerHTML = '';
+      awaySelect.innerHTML = '';
+      teamArray.forEach(team => {
+        const option1 = document.createElement('option');
+        option1.value = team;
+        option1.textContent = team;
+        homeSelect.appendChild(option1);
+        const option2 = document.createElement('option');
+        option2.value = team;
+        option2.textContent = team;
+        awaySelect.appendChild(option2);
+      });
+    }
+
+    /*****************
      * Event Listeners for Team Buttons
      *****************/
     document.getElementById("homeGoalBtn").addEventListener("mousedown", () => {
@@ -411,8 +441,11 @@
     /*****************
      * Initialization
      *****************/
+    // Populate the team dropdowns from the hardcoded array.
+    populateTeamSelects(teams);
+    // Initialize audio context for reverb (for horn sounds)
     initAudioContext();
-    // Static team options are already in the HTML.
+    // Initialize tracks
     randomizeTrack(1);
     randomizeTrack(2);
     selectTrack(1);
