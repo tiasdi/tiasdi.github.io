@@ -305,10 +305,10 @@
       playHornSoundCustom(team, 0.0, 0.4);
       // Start repeating instances every 250ms:
       hornInterval = setInterval(() => {
-        playHornSoundCustom(team, 0.6, 0.4);
-      }, 250);
+        playHornSoundCustom(team, 0.8, 0.4);
+      }, 100);
       // Schedule the goal song 2-4 seconds after initial press:
-      const delay = 2000 + Math.random() * 2000;
+      const delay = 1000 + Math.random() * 1500;
       goalTimeout = setTimeout(() => {
         if (!goalPlaying) {
           const goalPath = getTeamSoundPath(team, "Goal");
