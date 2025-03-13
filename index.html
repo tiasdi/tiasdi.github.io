@@ -20,7 +20,7 @@
           -ms-user-select: none;
               user-select: none;
     }
-    /* Main container fills exactly the viewport */
+    /* Main container exactly fills the viewport */
     #app {
       width: 100vw;
       height: 100vh;
@@ -51,7 +51,7 @@
       justify-content: center;
       padding: 2px;
     }
-    /* Each track row: one full-width row with 60% label, 20% NEXT, 20% SELECT */
+    /* Each track row: 100% width, inline children: 60% label, 20% NEXT, 20% SELECT */
     .track-row {
       width: 100%;
       display: flex;
@@ -204,13 +204,13 @@
       <button class="btn control-btn play-btn" onclick="playSelectedTrack()">PLAY</button>
     </div>
     <!-- Visible version footer -->
-    <div id="versionInfo">Hockey DJ Webapp Version 1.12</div>
+    <div id="versionInfo">Hockey DJ Webapp Version 1.15</div>
   </div>
 
   <script>
     // Display version alert on window load.
     window.onload = function() {
-      alert("Hockey DJ Webapp Version 1.12");
+      alert("Hockey DJ Webapp Version 1.15");
     };
 
     // Hardcoded team list (editable)
@@ -333,18 +333,22 @@
     }
 
     /* 
-      New GOAL Button Behavior (Version 1.13):
-      - When the GOAL button is tapped, play the horn once.
-          Use first instance parameters: fade in 0.0s, fade out 0.4s.
-      - Also schedule the Goal.mp3 to play 1–2 seconds after the tap.
-      - The STOP button cancels the goal song timer.
+      GOAL Button Behavior (Version 1.15):
+      - When the GOAL button is tapped (via click or touchstart):
+          • Play horn once with fade in 0.0s and fade out 0.4s.
+          • Schedule the Goal.mp3 to play 1–2 seconds later.
+      - Do not cancel the scheduled song if the button is pressed again.
+      - The song will continue until a new song is played or the STOP button is tapped.
+      - The STOP button cancels the scheduled goal song and stops current playback.
     */
     function startGoalSound(team) {
+      // If a goal song is already scheduled/playing, ignore additional taps.
+      if (goalTimeout || goalPlaying) return;
       goalPlaying = false;
       currentGoalTeam = team;
-      // Play horn once:
+      // Play horn once immediately:
       playHornSoundCustom(team, 0.0, 0.4);
-      // Schedule the goal song 1–2 seconds after tap:
+      // Schedule the goal song 1–2 seconds after the tap:
       const delay = 1000 + Math.random() * 1000;
       goalTimeout = setTimeout(() => {
         if (!goalPlaying) {
@@ -354,7 +358,7 @@
         }
       }, delay);
     }
-    // When GOAL button is released (if needed), simply clear the scheduled goal song.
+    // STOP goal sound (and any playback) only when STOP button is tapped.
     function stopGoalSound() {
       if (goalTimeout) {
         clearTimeout(goalTimeout);
@@ -437,16 +441,29 @@
         awaySelect.appendChild(option2);
       });
     }
-    // Event listeners for GOAL buttons (using "click" so a single tap triggers the behavior)
-    document.getElementById("homeGoalBtn").addEventListener("click", () => {
+    // Event listeners for GOAL buttons:
+    // Use click and touchstart for mobile support.
+    const homeGoalBtn = document.getElementById("homeGoalBtn");
+    const awayGoalBtn = document.getElementById("awayGoalBtn");
+    homeGoalBtn.addEventListener("click", () => {
       const team = document.getElementById("homeTeamSelect").value;
       startGoalSound(team);
     });
-    document.getElementById("awayGoalBtn").addEventListener("click", () => {
+    homeGoalBtn.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      const team = document.getElementById("homeTeamSelect").value;
+      startGoalSound(team);
+    });
+    awayGoalBtn.addEventListener("click", () => {
       const team = document.getElementById("awayTeamSelect").value;
       startGoalSound(team);
     });
-    // STOP button cancels goal song
+    awayGoalBtn.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      const team = document.getElementById("awayTeamSelect").value;
+      startGoalSound(team);
+    });
+    // STOP button cancels the goal song and stops playback.
     document.getElementById("stopBtn").addEventListener("click", () => {
       stopGoalSound();
       stopPlayback();
@@ -477,6 +494,3 @@
   </script>
 </body>
 </html>
-
-
-
