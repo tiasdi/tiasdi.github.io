@@ -300,6 +300,183 @@
       let hornAudio = new Audio(hornPath);
       hornAudio.crossOrigin = "anonymous";
       hornAudio.play().catch(e => console.error("Horn play error: " + e));
-      if (audioContext && audioContext.state === 'suspend
+      if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+      try {
+        let source = audioContext.createMediaElementSource(hornAudio);
+        let gainNode = audioContext.createGain();
+        gainNode.gain.value = 0;
+        let convolver = audioContext.createConvolver();
+        if (reverbBuffer) {
+          convolver.buffer = reverbBuffer;
+        }
+        source.connect(gainNode);
+        gainNode.connect(convolver);
+        convolver.connect(audioContext.destination);
+        let now = audioContext.currentTime;
+        gainNode.gain.setValueAtTime(0, now);
+        if (fadeInTime > 0) {
+          gainNode.gain.linearRampToValueAtTime(1, now + fadeInTime);
+        } else {
+          gainNode.gain.setValueAtTime(1, now);
+        }
+        if (fadeOutTime > 0) {
+          gainNode.gain.setValueAtTime(1, now + fadeInTime);
+          gainNode.gain.linearRampToValueAtTime(0, now + fadeInTime + fadeOutTime);
+        } else {
+          gainNode.gain.setValueAtTime(1, now + fadeInTime);
+        }
+      } catch(e) {
+        console.error("Error processing horn with reverb: " + e);
+      }
+    }
+
+    /* 
+      New GOAL Button Behavior (Version 1.13):
+      - When the GOAL button is tapped, play the horn once.
+          Use first instance parameters: fade in 0.0s, fade out 0.4s.
+      - Also schedule the Goal.mp3 to play 1–2 seconds after the tap.
+      - The STOP button cancels the goal song timer.
+    */
+    function startGoalSound(team) {
+      goalPlaying = false;
+      currentGoalTeam = team;
+      // Play horn once:
+      playHornSoundCustom(team, 0.0, 0.4);
+      // Schedule the goal song 1–2 seconds after tap:
+      const delay = 1000 + Math.random() * 1000;
+      goalTimeout = setTimeout(() => {
+        if (!goalPlaying) {
+          const goalPath = getTeamSoundPath(team, "Goal");
+          playSong(goalPath);
+          goalPlaying = true;
+        }
+      }, delay);
+    }
+    // When GOAL button is released (if needed), simply clear the scheduled goal song.
+    function stopGoalSound() {
+      if (goalTimeout) {
+        clearTimeout(goalTimeout);
+        goalTimeout = null;
+      }
+      currentGoalTeam = null;
+    }
+
+    // Track control functions
+    function randomizeTrack(trackNumber) {
+      let available = [];
+      for (let genre in songsByGenre) {
+        if (activeGenres[genre]) {
+          available = available.concat(songsByGenre[genre]);
+        }
+      }
+      if (available.length === 0) {
+        for (let genre in songsByGenre) {
+          available = available.concat(songsByGenre[genre]);
+        }
+      }
+      const randomSong = available[Math.floor(Math.random() * available.length)];
+      trackSongs[trackNumber] = randomSong;
+      const label = document.getElementById(`track${trackNumber}Label`);
+      label.textContent = (currentTrack === trackNumber ? ">> " : "") +
+                          `Track ${trackNumber}: ${randomSong.split('/').pop()}`;
+    }
+    function selectTrack(trackNumber) {
+      currentTrack = trackNumber;
+      for (let i = 1; i <= 2; i++) {
+        const label = document.getElementById(`track${i}Label`);
+        if (i === trackNumber) {
+          label.textContent = ">> " + label.textContent.replace(">> ", "");
+        } else {
+          label.textContent = label.textContent.replace(">> ", "");
+        }
+      }
+    }
+    function playSelectedTrack() {
+      if (currentTrack && trackSongs[currentTrack]) {
+        playSong(trackSongs[currentTrack]);
+      } else {
+        console.error("Please select a track by randomizing and then selecting it.");
+      }
+    }
+    function stopPlayback() {
+      if (currentAudio) {
+        fadeAudio(currentAudio, 0, 800, () => {
+          currentAudio.pause();
+          currentAudio.currentTime = 0;
+          currentAudio = null;
+        });
+      }
+    }
+    // Genre selection
+    function toggleGenre(element) {
+      const genre = element.getAttribute("data-genre");
+      if (activeGenres[genre]) {
+        delete activeGenres[genre];
+        element.classList.remove("active");
+      } else {
+        activeGenres[genre] = true;
+        element.classList.add("active");
+      }
+    }
+    // Populate team dropdowns (hardcoded)
+    function populateTeamSelects(teamArray) {
+      const homeSelect = document.getElementById("homeTeamSelect");
+      const awaySelect = document.getElementById("awayTeamSelect");
+      homeSelect.innerHTML = '';
+      awaySelect.innerHTML = '';
+      teamArray.forEach(team => {
+        const option1 = document.createElement('option');
+        option1.value = team;
+        option1.textContent = team;
+        homeSelect.appendChild(option1);
+        const option2 = document.createElement('option');
+        option2.value = team;
+        option2.textContent = team;
+        awaySelect.appendChild(option2);
+      });
+    }
+    // Event listeners for GOAL buttons (using "click" so a single tap triggers the behavior)
+    document.getElementById("homeGoalBtn").addEventListener("click", () => {
+      const team = document.getElementById("homeTeamSelect").value;
+      startGoalSound(team);
+    });
+    document.getElementById("awayGoalBtn").addEventListener("click", () => {
+      const team = document.getElementById("awayTeamSelect").value;
+      startGoalSound(team);
+    });
+    // STOP button cancels goal song
+    document.getElementById("stopBtn").addEventListener("click", () => {
+      stopGoalSound();
+      stopPlayback();
+    });
+    // Event listeners for other buttons.
+    document.getElementById("homePPBtn").addEventListener("click", () => {
+      const team = document.getElementById("homeTeamSelect").value;
+      playTeamSound(team, "Powerplay");
+    });
+    document.getElementById("homeWinBtn").addEventListener("click", () => {
+      const team = document.getElementById("homeTeamSelect").value;
+      playTeamSound(team, "Win");
+    });
+    document.getElementById("awayPPBtn").addEventListener("click", () => {
+      const team = document.getElementById("awayTeamSelect").value;
+      playTeamSound(team, "Powerplay");
+    });
+    document.getElementById("awayWinBtn").addEventListener("click", () => {
+      const team = document.getElementById("awayTeamSelect").value;
+      playTeamSound(team, "Win");
+    });
+    // Initialization
+    populateTeamSelects(teams);
+    initAudioContext();
+    randomizeTrack(1);
+    randomizeTrack(2);
+    selectTrack(1);
+  </script>
+</body>
+</html>
+
 
 
