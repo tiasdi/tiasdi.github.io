@@ -51,7 +51,7 @@
       justify-content: center;
       padding: 2px;
     }
-    /* Each track row: 100% width with 60% label, 18% NEXT, 22% SELECT */
+    /* Each track row: 100% width with 80% label, 10% NEXT, 10% SELECT */
     .track-row {
       width: 100%;
       display: flex;
@@ -59,16 +59,16 @@
       margin: 2px 0;
     }
     .track-label {
-      width: 60%;
+      width: 80%;
       font-family: 'Press Start 2P', cursive;
       font-size: 14px;
       margin-right: 5px;
     }
     .track-next {
-      width: 18%;
+      width: 10%;
     }
     .track-select {
-      width: 22%;
+      width: 10%;
     }
     #bottomControls {
       width: 100%;
@@ -118,10 +118,10 @@
       height: 25vh;
       font-size: 2em;
     }
-    /* Make Powerplay and Win buttons taller */
+    /* Powerplay and Win buttons reduced in height and font size */
     #homePPBtn, #homeWinBtn, #awayPPBtn, #awayWinBtn {
-      height: 15vh;
-      font-size: 20px;
+      height: 10vh;
+      font-size: 16px;
     }
     .genre-btn {
       display: inline-block;
@@ -212,11 +212,10 @@
       <button class="btn control-btn play-btn" onclick="playSelectedTrack()">PLAY</button>
     </div>
     <!-- Visible version footer -->
-    <div id="versionInfo">Hockey DJ Webapp Version 1.16</div>
+    <div id="versionInfo">Hockey DJ Webapp Version 1.17</div>
   </div>
 
   <script>
-    // Display version alert on window load.
 
     // Hardcoded team list (editable)
     const teams = ["Langley"];
@@ -498,4 +497,3 @@
   </script>
 </body>
 </html>
-
