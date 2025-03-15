@@ -51,7 +51,7 @@
       justify-content: center;
       padding: 2px;
     }
-    /* Each track row: 100% width, inline children: 60% label, 20% NEXT, 20% SELECT */
+    /* Each track row: 100% width with 60% label, 18% NEXT, 22% SELECT */
     .track-row {
       width: 100%;
       display: flex;
@@ -64,8 +64,11 @@
       font-size: 14px;
       margin-right: 5px;
     }
-    .track-next, .track-select {
-      width: 20%;
+    .track-next {
+      width: 18%;
+    }
+    .track-select {
+      width: 22%;
     }
     #bottomControls {
       width: 100%;
@@ -114,6 +117,11 @@
     .big-btn {
       height: 25vh;
       font-size: 2em;
+    }
+    /* Make Powerplay and Win buttons taller */
+    #homePPBtn, #homeWinBtn, #awayPPBtn, #awayWinBtn {
+      height: 15vh;
+      font-size: 20px;
     }
     .genre-btn {
       display: inline-block;
@@ -337,7 +345,7 @@
       - When the GOAL button is tapped (via click or touchstart):
           • Play horn once with fade in 0.0s and fade out 0.4s.
           • Schedule the Goal.mp3 to play 1–2 seconds later.
-      - Do not cancel the scheduled song if the button is pressed again.
+      - Do not cancel or restart the scheduled song if the button is pressed again.
       - The song will continue until a new song is played or the STOP button is tapped.
       - The STOP button cancels the scheduled goal song and stops current playback.
     */
@@ -358,7 +366,7 @@
         }
       }, delay);
     }
-    // STOP goal sound (and any playback) only when STOP button is tapped.
+    // STOP button cancels the goal song and stops playback.
     function stopGoalSound() {
       if (goalTimeout) {
         clearTimeout(goalTimeout);
@@ -441,8 +449,7 @@
         awaySelect.appendChild(option2);
       });
     }
-    // Event listeners for GOAL buttons:
-    // Use click and touchstart for mobile support.
+    // Event listeners for GOAL buttons (click and touchstart for mobile)
     const homeGoalBtn = document.getElementById("homeGoalBtn");
     const awayGoalBtn = document.getElementById("awayGoalBtn");
     homeGoalBtn.addEventListener("click", () => {
@@ -494,3 +501,4 @@
   </script>
 </body>
 </html>
+
